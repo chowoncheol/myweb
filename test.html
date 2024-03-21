@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Shipping Cost Calculator</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+    .input-wrap-box { display: flex; justify-content: center; flex-wrap: wrap; padding: 20px; }
+    .input-item { margin: 10px; display: flex; flex-direction: column; align-items: center; } /* 가운데 정렬을 위해 추가 */
+    .input-item-2nd-row { width: 100%; display: flex; justify-content: space-around; flex-wrap: wrap; }
+    .input-item input, .input-item-2nd-row input {
+        width: 400px;    
+        height: 50px;
+        text-align: center;
+        border: 2px solid ##FFFFFF; /* 테두리 색상 변경 */
+        background-color: ##FFFFFF; /* 배경 색상 설정 */
+        font-family: 'Pretendard', sans-serif; /* 폰트 설정 */
+       border-radius: 10px; /* 모서리 둥글게 */
+        font-size: 20px; /* 폰트 크기 설정 */
+       font-weight: bold; /* 폰트 굵기 설정 */
+       color: #355CF4; /* 폰트 색상 설정 */
+        margin-top: 5px; /* 외부 여백(아래 여백) 조절 */
+    }
+    .input-item label {
+        text-align: center;
+        display: block;
+        width: 100%;
+        font-size: 16px; /* 글씨 크기 설정 */
+        font-weight: bold; /* 볼드체 설정 */
+        font-family: 'Pretendard', sans-serif; /* 폰트 설정 */
+    }
+
+      h1 {
+            text-align: center; /* 제목을 가운데 정렬 */
+            color: #355CF4; /* 제목의 색상 */
+            font-family: 'Pretendard', sans-serif; /* 폰트 설정 */
+            font-size: 36px; /* 글씨 크기 */
+            font-weight: bold; /* 글씨 굵기 */
+            margin: 40px 0; /* 위아래 마진으로 여백 추가 */
+     }
+      h2 {
+            text-align: center; /* 제목을 가운데 정렬 */
+            color: #000000; /* 제목의 색상 */
+            font-family: 'Pretendard', sans-serif; /* 폰트 설정 */
+            font-size: 24px; /* 글씨 크기 */
+            font-weight: normal; /* 글씨 굵기 */
+            margin: 40px 0; /* 위아래 마진으로 여백 추가 */
+     }
+
+    .input-item input, .input-item-2nd-row input { width: 200px; text-align: center; } /* input 내의 텍스트를 가운데 정렬 */
+        .input-item label { text-align: center; display: block; width: 100%; }
+        /* 추가: 입력 박스와 레이블에 대한 스타일 */
+        input, label {
+            font-family: 'Pretendard', sans-serif;
+        }</style>
+</head>
+<body>
+    <h1> 에스엔비 배송비 계산기</h1> <!-- 제목 추가 -->
+    <h2> 어디까지나 예상견적으로 실제 견적은 달라질 수 있음을 유의해주세요! </h2> <!-- 주의 추가 -->
+    <div class="compute-input">
+        <div class="input-wrap-box">
+            <!-- 입력 필드 -->
+            <div class="input-item">
+                <label for="length">길이 (cm)</label>
+                <input id="length" type="number" oninput="calculateShippingCost()">
+            </div>
+            <div class="input-item">
+                <label for="width">너비 (cm)</label>
+                <input id="width" type="number" oninput="calculateShippingCost()">
+            </div>
+            <div class="input-item">
+                <label for="height">높이 (cm)</label>
+                <input id="height" type="number" oninput="calculateShippingCost()">
+            </div>
+            <div class="input-item">
+                <label for="weight">무게 (kg)</label>
+                <input id="weight" type="number" oninput="calculateShippingCost()">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateShippingCost() {
+            var length = parseFloat(document.getElementById('length').value) || 0;
+            var width = parseFloat(document.getElementById('width').value) || 0;
+            var height = parseFloat(document.getElementById('height').value) || 0;
+            var weight = parseFloat(document.getElementById('weight').value) || 0;
+            var dimensionsSum = length + width + height;
+
+            var cbm = (length * width * height) / 1000000;
+            var cbm_gyungdong = (length * width * height);
+            document.getElementById('cbm').value = cbm.toFixed(1);
+
+            // 여기에서 다른 함수들을 호출합니다.
+            calculateEstimatedCost(cbm, weight, dimensionsSum);
+            calculateDetailedInspectionCost(weight, dimensionsSum);
+            calculateStandardPackingCost(weight, dimensionsSum);
+            calculateSpecialPackingCost(weight, dimensionsSum);
+            calculateWoodPackingCost(dimensionsSum);
+            calculateGyundongPackingCost(weight, cbm_gyungdong);
+        }
+function calculateEstimatedCost(cbm, weight, dimensionsSum) {
+    var weightCost, volumeCost;
+    if (dimensionsSum <= 160) {
+        weightCost = 6100 + (1600 * (weight - 1));
+        volumeCost = weightCost; // 160 이하인 경우 부피 비용은 고려하지 않음
+    } else {
+        cbm = Math.max(cbm, 1);
+        volumeCost = cbm * 86000;
+        // 무게 기반의 추가 비용이 있을 경우 여기에 계산 로직을 추가
+        weightCost = volumeCost; // 본 예제에서는 부피만을 기준으로 삼으나, 필요에 따라 수정
+    }
+    var estimatedCost = Math.max(weightCost, volumeCost);
+    var estimatedCost = Math.floor(estimatedCost);        
+    document.getElementById('estimated-cost').value = `${estimatedCost.toFixed(0)}원`;
+    var formattedCost = estimatedCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+    document.getElementById('estimated-cost').value = `${formattedCost}원`;
+}
+
+function calculateDetailedInspectionCost(weight, dimensionsSum) {
+    var weightCost = 3000; // 기본 가격 설정
+    if (weight > 15) {
+        weightCost += (Math.ceil((weight - 15) / 5) * 2000);
+    }
+
+    var volumeCost = 3000; // 부피에 따른 기본 가격 설정
+    if (dimensionsSum > 160) {
+        volumeCost += (Math.ceil((dimensionsSum - 160) / 20) * 2000);
+    }
+
+    var baseCost = Math.max(weightCost, volumeCost);    
+    var baseCost = Math.floor(baseCost);        
+    var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+    document.getElementById('detailed-inspection-cost').value = `${formattedCost}원`;
+}
+
+    function calculateStandardPackingCost(weight, dimensionsSum) {
+        var weightCost = 1000;
+        var volumeCost = 1000;
+
+        if (weight > 5) {
+            weightCost += (Math.ceil((weight - 5) / 5) * 1000);
+        }
+
+        if (dimensionsSum > 100) {
+            volumeCost += (Math.ceil((dimensionsSum - 100) / 20) * 1000);
+        }
+
+        var baseCost = Math.max(weightCost, volumeCost);
+        var baseCost = Math.floor(baseCost);        
+        var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+        document.getElementById('standard-packing-cost').value = `${formattedCost}원`
+    }
+
+    function calculateSpecialPackingCost(weight, dimensionsSum) {
+        var weightCost = 3000;
+        var volumeCost = 3000;
+
+        if (weight > 5) {
+            weightCost += (Math.ceil((weight - 5) / 5) * 2000);
+        }
+
+        if (dimensionsSum > 100) {
+            volumeCost += (Math.ceil((dimensionsSum - 100) / 20) * 2000);
+        }
+
+        var baseCost = Math.max(weightCost, volumeCost);
+        var baseCost = Math.floor(baseCost);        
+        var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+        document.getElementById('special-packing-cost').value = `${formattedCost}원`
+    }
+
+    function calculateWoodPackingCost(dimensionsSum) {
+        var baseCost = 20000;
+
+        if (dimensionsSum > 100) {
+            baseCost += (Math.ceil((dimensionsSum - 100) / 40) * 10000);
+        }
+        var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+        document.getElementById('wood-packing-cost').value = `${formattedCost}원`
+    }
+
+    function calculateGyundongPackingCost(weight, dimensionsSum) {
+        var weightCost = 3000;
+        var volumeCost = 3000;
+
+        if (weight > 6) {
+            weightCost += (Math.ceil((weight - 6) / 1) * 400);
+        }
+
+        if (dimensionsSum > 20000) {
+            volumeCost += (Math.ceil((dimensionsSum - 20000) / 10000) * 500);
+        }
+
+        var baseCost = Math.max(weightCost, volumeCost);
+        var baseCost = Math.floor(baseCost);        
+	var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+        document.getElementById('gyungdong-packing-cost').value = `${formattedCost}원`
+  
+    }
+
+        window.onload = calculateShippingCost;
+    </script>
+
+    <div class="compute-input">
+        <div class="input-wrap-box">
+            <!-- 결과 표시 영역 -->
+            <div class="input-item-2nd-row">
+                <div class="input-item">
+                    <label>CBM</label>
+                    <input id="cbm" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+                <div class="input-item">
+                    <label>배송비용</label>
+                    <input id="estimated-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+                <div class="input-item">
+                    <label>정밀검수</label>
+                    <input id="detailed-inspection-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+                <div class="input-item">
+                    <label>일반포장</label>
+                    <input id="standard-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+                <div class="input-item">
+                    <label>특수포장</label>
+                    <input id="special-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+                <div class="input-item">
+                    <label>우드포장</label>
+                    <input id="wood-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+                <div class="input-item">
+                    <label>경동택배 </label>
+                    <input id="gyungdong-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
