@@ -5,10 +5,46 @@
     <title>Shipping Cost Calculator</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <style>
-    .input-wrap-box { display: flex; justify-content: center; flex-wrap: wrap; padding: 20px; }
-    .input-item { margin: 10px; display: flex; flex-direction: column; align-items: center; } /* 가운데 정렬을 위해 추가 */
-    .input-item-2nd-row { width: 100%; display: flex; justify-content: space-around; flex-wrap: wrap; }
-    .input-item input, .input-item-2nd-row input {
+
+.input-item {
+    display: flex;
+    justify-content: center; /* 가운데 정렬 */
+    align-items: center; /* 항목들을 세로 중앙 정렬 */
+}
+
+.checkbox-and-label {
+    display: flex;
+    align-items: center; /* 체크박스와 라벨 세로 중앙 정렬 */
+    margin-right: 10px; /* 텍스트박스와의 간격 */
+}
+
+/* 체크박스와 라벨 사이 간격 최소화 */
+.checkbox-and-label input[type="checkbox"] {
+    transform: scale(0.6); /* 체크박스 크기 조정 */
+    margin-right: -70px; /* 체크박스와 라벨 사이 간격 */
+}
+
+
+
+.input-wrap-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around; /* 각 항목 사이의 간격을 조정 */
+    align-items: stretch; /* 행들의 높이를 통일 */
+    padding: 20px;
+}
+
+.input-item, .input-item-2nd-row .input-item, .input-item-3nd-row .input-item, .input-item-4nd-row .input-item {
+    margin: 20px;
+    flex-basis: calc(5% - 10px); /* 4개의 항목이 각각 25%의 너비를 가지도록 하며, margin 고려 */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 요소들을 세로 중앙 정렬 */
+    justify-content: center; /* 체크박스 포함 컨테이너를 가운데 정렬 */
+}
+
+
+    .input-item input, .input-item-2nd-row input, input-item-3nd-row input, input-item-4nd-row {
         width: 400px;    
         height: 50px;
         text-align: center;
@@ -21,11 +57,13 @@
        color: #355CF4; /* 폰트 색상 설정 */
         margin-top: 5px; /* 외부 여백(아래 여백) 조절 */
     }
+
+
     .input-item label {
         text-align: center;
         display: block;
         width: 100%;
-        font-size: 16px; /* 글씨 크기 설정 */
+        font-size: 18px; /* 글씨 크기 설정 */
         font-weight: bold; /* 볼드체 설정 */
         font-family: 'Pretendard', sans-serif; /* 폰트 설정 */
     }
@@ -53,6 +91,7 @@
         input, label {
             font-family: 'Pretendard', sans-serif;
         }</style>
+
 </head>
 <body>
     <h1> 에스엔비 배송비 계산기</h1> <!-- 제목 추가 -->
@@ -60,6 +99,10 @@
     <div class="compute-input">
         <div class="input-wrap-box">
             <!-- 입력 필드 -->
+            <div class="input-item">
+                    <label for="original-price">원가 (원)</label>
+                    <input id="original-price" type="number" oninput="calculateShippingCost()">
+                </div>
             <div class="input-item">
                 <label for="length">길이 (cm)</label>
                 <input id="length" type="number" oninput="calculateShippingCost()">
@@ -81,6 +124,7 @@
 
     <script>
         function calculateShippingCost() {
+
             var length = parseFloat(document.getElementById('length').value) || 0;
             var width = parseFloat(document.getElementById('width').value) || 0;
             var height = parseFloat(document.getElementById('height').value) || 0;
@@ -89,7 +133,7 @@
 
             var cbm = (length * width * height) / 1000000;
             var cbm_gyungdong = (length * width * height);
-            document.getElementById('cbm').value = cbm.toFixed(1);
+            document.getElementById('cbm').value = cbm.toFixed(1); // 소수점 첫째 자리까지 반올림하여 표시
 
             // 여기에서 다른 함수들을 호출합니다.
             calculateEstimatedCost(cbm, weight, dimensionsSum);
@@ -98,24 +142,89 @@
             calculateSpecialPackingCost(weight, dimensionsSum);
             calculateWoodPackingCost(dimensionsSum);
             calculateGyundongPackingCost(weight, cbm_gyungdong);
-        }
-function calculateEstimatedCost(cbm, weight, dimensionsSum) {
-    var weightCost, volumeCost;
-    if (dimensionsSum <= 160) {
-        weightCost = 6100 + (1600 * (weight - 1));
-        volumeCost = weightCost; // 160 이하인 경우 부피 비용은 고려하지 않음
-    } else {
-        cbm = Math.max(cbm, 1);
-        volumeCost = cbm * 86000;
-        // 무게 기반의 추가 비용이 있을 경우 여기에 계산 로직을 추가
-        weightCost = volumeCost; // 본 예제에서는 부피만을 기준으로 삼으나, 필요에 따라 수정
+
+            // 기존의 calculateShippingCost 함수 내에 다음 코드 추가
+            calculateCJExtraCharge(dimensionsSum, weight);
+
+            // 관부가세 계산 함수 호출
+            calculateCustomsDuty();
+
+    var finalCost = 0; // 최종 비용을 저장할 변수 초기화
+
+    // 무게배송비용 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('weight-shipping-cost-include').checked) {
+        finalCost += parseFloat(document.getElementById('weight-shipping-cost').value.replace('원', '').replace(/,/g, '')) || 0;
     }
-    var estimatedCost = Math.max(weightCost, volumeCost);
-    var estimatedCost = Math.floor(estimatedCost);        
-    document.getElementById('estimated-cost').value = `${estimatedCost.toFixed(0)}원`;
-    var formattedCost = estimatedCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
-    document.getElementById('estimated-cost').value = `${formattedCost}원`;
+
+    // 부피배송비용 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('volume-shipping-cost-include').checked) {
+        finalCost += parseFloat(document.getElementById('volume-shipping-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 정밀검수 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('detailed-inspection-include').checked) {
+        finalCost += parseFloat(document.getElementById('detailed-inspection-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 일반포장 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('standard-packing-include').checked) {
+        finalCost += parseFloat(document.getElementById('standard-packing-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 특수포장 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('special-packing-include').checked) {
+        finalCost += parseFloat(document.getElementById('special-packing-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 우드포장 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('wood-packing-include').checked) {
+        finalCost += parseFloat(document.getElementById('wood-packing-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 경동택배 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('gyungdong-packing-include').checked) {
+        finalCost += parseFloat(document.getElementById('gyungdong-packing-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // CJ할증비 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('cj-extra-charge-include').checked) {
+        finalCost += parseFloat(document.getElementById('cj-extra-charge-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 관부가세 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('customs-duty-include').checked) {
+        finalCost += parseFloat(document.getElementById('customs-duty-cost').value.replace('원', '').replace(/,/g, '')) || 0;
+    }
+
+    // 최종결과를 표시
+    document.getElementById('final-result').value = `${finalCost.toLocaleString('ko-KR')}원`;
 }
+
+function calculateEstimatedCost(cbm, weight, dimensionsSum) {
+    // 초기값을 0으로 설정
+    var weightCost = 0;
+    var volumeCost = 0;
+
+    // 무게 입력이 유효한 경우에만 계산
+    if (!isNaN(weight) && weight > 0) {
+        weightCost = 6100 + (1600 * (weight - 1));
+    } else {
+        weightCost = 0; // 아무것도 입력되지 않았을 경우 무게배송비용을 0으로 설정
+    }
+
+    // CBM 계산이 유효한 경우에만 계산
+    if (!isNaN(cbm) && cbm > 0) {
+        cbm = Math.max(cbm, 0.1); // 최소 CBM 값을 0.1로 설정하여 소수점 첫째 자리까지 표현
+        volumeCost = cbm * 86000;
+    } else if (dimensionsSum > 160) { // 부피 계산이 유효하지 않지만, 차원 합이 160을 초과하는 경우
+        volumeCost = 86000; // 최소 부피 비용 설정
+    }
+
+    // 무게배송비용과 부피배송비용을 각각의 필드에 설정
+    document.getElementById('weight-shipping-cost').value = weightCost > 0 ? `${weightCost.toLocaleString('ko-KR')}원` : "0원";
+    document.getElementById('volume-shipping-cost').value = volumeCost > 0 ? `${volumeCost.toLocaleString('ko-KR')}원` : "0원";
+}
+
 
 function calculateDetailedInspectionCost(weight, dimensionsSum) {
     var weightCost = 3000; // 기본 가격 설정
@@ -157,11 +266,11 @@ function calculateDetailedInspectionCost(weight, dimensionsSum) {
         var volumeCost = 3000;
 
         if (weight > 5) {
-            weightCost += (Math.ceil((weight - 5) / 5) * 2000);
+            weightCost += (Math.ceil((weight - 5) / 5) * 1000);
         }
 
         if (dimensionsSum > 100) {
-            volumeCost += (Math.ceil((dimensionsSum - 100) / 20) * 2000);
+            volumeCost += (Math.ceil((dimensionsSum - 100) / 20) * 1000);
         }
 
         var baseCost = Math.max(weightCost, volumeCost);
@@ -194,47 +303,168 @@ function calculateDetailedInspectionCost(weight, dimensionsSum) {
 
         var baseCost = Math.max(weightCost, volumeCost);
         var baseCost = Math.floor(baseCost);        
-	var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
+   var formattedCost = baseCost.toLocaleString('ko-KR'); // 천 단위 구분 기호 추가
         document.getElementById('gyungdong-packing-cost').value = `${formattedCost}원`
   
     }
 
-        window.onload = calculateShippingCost;
+function calculateCJExtraCharge(dimensionsSum, weight) {
+    // 부피 기준 할증비
+    var volumeCharge = 0;
+    if (dimensionsSum > 140) {
+        volumeCharge = 3500;
+    } else if (dimensionsSum > 120) {
+        volumeCharge = 3000;
+    } else if (dimensionsSum > 100) {
+        volumeCharge = 1200;
+    } else if (dimensionsSum > 80) {
+        volumeCharge = 600;
+    }
+
+    // 무게 기준 할증비
+    var weightCharge = 0;
+    if (weight > 15) {
+        weightCharge = 3500;
+    } else if (weight > 10) {
+        weightCharge = 3000;
+    } else if (weight > 5) {
+        weightCharge = 1200;
+    } else if (weight > 2) {
+        weightCharge = 600;
+    }
+
+    // 부피와 무게 기준 중 더 높은 할증비 적용
+    var charge = Math.max(volumeCharge, weightCharge);
+
+    // 할증비를 문자열 형태로 포맷팅하여 반환
+    var formattedCharge = charge.toLocaleString('ko-KR');
+    document.getElementById('cj-extra-charge-cost').value = `${formattedCharge}원`;
+}
+
+
+function calculateCustomsDuty() {
+    var originalPrice = parseFloat(document.getElementById('original-price').value) || 0;
+    var customsDuty = originalPrice * 0.18; // 관부가세는 원가의 18%
+
+   document.getElementById('customs-duty-cost').value = `${customsDuty.toLocaleString('ko-KR')}원`;
+}
+
+
+   window.onload = function() {
+    calculateShippingCost(); // 초기 계산 실행
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', calculateShippingCost); // 모든 체크박스에 이벤트 리스너 추가
+    });
+   
+};
+
     </script>
 
-    <div class="compute-input">
+     <div class="compute-input">
         <div class="input-wrap-box">
             <!-- 결과 표시 영역 -->
             <div class="input-item-2nd-row">
                 <div class="input-item">
-                    <label>CBM</label>
-                    <input id="cbm" type="text" placeholder="자동 계산됨" disabled>
+                    <div class="checkbox-and-label">
+                        <input type="checkbox" id="cbm-include" >
+                        <label for="cbm-include">CBM</label>
+                    </div>
+                    <input id="cbm" type="text" placeholder="자동 계산됨" >
                 </div>
+
                 <div class="input-item">
-                    <label>배송비용</label>
-                    <input id="estimated-cost" type="text" placeholder="자동 계산됨" disabled>
+                    <div class="checkbox-and-label">
+                            <input type="checkbox" id="weight-shipping-cost-include" >
+                            <label for="weight-shipping-cost-include">무게배송비용</label>
+                        </div>
+                        <input id="weight-shipping-cost" type="text" placeholder="자동 계산됨" disabled>
                 </div>
+
                 <div class="input-item">
-                    <label>정밀검수</label>
-                    <input id="detailed-inspection-cost" type="text" placeholder="자동 계산됨" disabled>
-                </div>
-                <div class="input-item">
-                    <label>일반포장</label>
-                    <input id="standard-packing-cost" type="text" placeholder="자동 계산됨" disabled>
-                </div>
-                <div class="input-item">
-                    <label>특수포장</label>
-                    <input id="special-packing-cost" type="text" placeholder="자동 계산됨" disabled>
-                </div>
-                <div class="input-item">
-                    <label>우드포장</label>
-                    <input id="wood-packing-cost" type="text" placeholder="자동 계산됨" disabled>
-                </div>
-                <div class="input-item">
-                    <label>경동택배 </label>
-                    <input id="gyungdong-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                    <div class="checkbox-and-label">
+                        <input type="checkbox" id="volume-shipping-cost-include" >
+                        <label for="volume-shipping-cost-include">부피배송비용</label>
+                    </div>
+                    <input id="volume-shipping-cost" type="text" placeholder="자동 계산됨" disabled>
                 </div>
             </div>
+
+            <div class="input-item-2nd-row">
+            <div class="input-item">
+                <div class="checkbox-and-label">
+                    <input type="checkbox" id="detailed-inspection-include" >
+                    <label for="detailed-inspection-include">정밀검수</label>
+                        </div>
+                        <input id="detailed-inspection-cost" type="text" placeholder="자동 계산됨" disabled>
+            </div>
+            </div>
+
+            <div class="input-item-2nd-row">
+                <div class="input-item">
+                   <div class="checkbox-and-label">
+                       <input type="checkbox" id="standard-packing-include" >
+                       <label for="standard-packing-include">일반포장</label>
+                   </div>
+                   <input id="standard-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+
+                <div class="input-item">
+                    <div class="checkbox-and-label">
+                        <input type="checkbox" id="special-packing-include" >
+                        <label for="special-packing-include">특수포장</label>
+                    </div>
+                    <input id="special-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+
+              <div class="input-item">
+                  <div class="checkbox-and-label">
+                      <input type="checkbox" id="wood-packing-include" >
+                      <label for="wood-packing-include">우드포장</label>
+                  </div>
+                  <input id="wood-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+            </div>
+
+            <div class="input-item-3nd-row">
+
+                <div class="input-item">
+                        <div class="checkbox-and-label">
+                                <input type="checkbox" id="gyungdong-packing-include" >
+                                <label for="gyungdong-packing-include">경동택배</label>
+                         </div>
+                    <input id="gyungdong-packing-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+
+                <!-- CJ할증비 -->
+                <div class="input-item">
+                    <div class="checkbox-and-label">
+                        <input type="checkbox" id="cj-extra-charge-include" >
+                        <label for="cj-extra-charge-include">CJ할증비</label>
+                    </div>
+                    <input id="cj-extra-charge-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+
+                <!-- 관부가세 -->
+                <div class="input-item">
+                    <div class="checkbox-and-label">
+                        <input type="checkbox" id="customs-duty-include" >
+                        <label for="customs-duty-include">관·부가세 (18%로 계산)</label>
+                    </div>
+                    <input id="customs-duty-cost" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+            </div>
+
+            <div class="input-item-4nd-row">
+                <div class="input-item">
+                    <label> 최종결과 </label>
+                    <input id="final-result" type="text" placeholder="자동 계산됨" disabled>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
         </div>
     </div>
 </body>
