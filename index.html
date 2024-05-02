@@ -6,6 +6,70 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <style>
 
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+
+
+.toggle-switch .checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch .switch {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-switch .switch:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.checkbox:checked + .switch {
+    background-color: #2196F3;
+}
+
+.checkbox:checked + .switch:before {
+    transform: translateX(26px);
+}
+
+
+.toggle-button {
+    display: flex; /* Flexbox를 사용하여 내용을 수평으로 배치 */
+    align-items: center; /* 요소들을 세로 중앙에 위치 */
+}
+
+.toggle-button label {
+    margin-right: -100px; /* 라벨과 라디오 버튼 사이의 오른쪽 마진을 줄임 */
+}
+
+#shipping-method-display {
+    margin-top: 10px; /* 토글 버튼 아래에 표시될 텍스트의 여백 설정 */
+    font-size: 16px;
+    font-weight: bold;
+    color: #355CF4; /* 텍스트 색상 설정 */
+}
+
 .input-item {
     display: flex;
     justify-content: center; /* 가운데 정렬 */
@@ -94,21 +158,21 @@
 
 </head>
 <body>
-    <h1> 에스엔비 배송비 계산기</h1> <!-- 제목 추가 -->
+    <h1> 에스엔비 배송비 계산기 v1.2 </h1> <!-- 제목 추가 -->
     <h2> 어디까지나 예상견적으로 실제 견적은 달라질 수 있음을 유의해주세요! </h2> <!-- 주의 추가 -->
     <div class="compute-input">
         <div class="input-wrap-box">
             <!-- 입력 필드 -->
             <div class="input-item">
-                    <label for="original-price">원가 (원)</label>
+                    <label for="original-price">마켓판매가 (원)</label>
                     <input id="original-price" type="number" oninput="calculateShippingCost()">
                 </div>
             <div class="input-item">
-                <label for="length">길이 (cm)</label>
+                <label for="length">가로 (cm)</label>
                 <input id="length" type="number" oninput="calculateShippingCost()">
             </div>
             <div class="input-item">
-                <label for="width">너비 (cm)</label>
+                <label for="width">세로 (cm)</label>
                 <input id="width" type="number" oninput="calculateShippingCost()">
             </div>
             <div class="input-item">
@@ -152,14 +216,11 @@
     var finalCost = 0; // 최종 비용을 저장할 변수 초기화
 
     // 무게배송비용 체크박스가 체크된 경우 값 추가
-    if (document.getElementById('weight-shipping-cost-include').checked) {
-        finalCost += parseFloat(document.getElementById('weight-shipping-cost').value.replace('원', '').replace(/,/g, '')) || 0;
-    }
+    var weightShippingCost = parseFloat(document.getElementById('weight-shipping-cost').value.replace('원', '').replace(/,/g, ''));
+    var volumeShippingCost = parseFloat(document.getElementById('volume-shipping-cost').value.replace('원', '').replace(/,/g, ''));
+    var maxShippingCost = Math.max(weightShippingCost, volumeShippingCost);
+    finalCost += maxShippingCost;
 
-    // 부피배송비용 체크박스가 체크된 경우 값 추가
-    if (document.getElementById('volume-shipping-cost-include').checked) {
-        finalCost += parseFloat(document.getElementById('volume-shipping-cost').value.replace('원', '').replace(/,/g, '')) || 0;
-    }
 
     // 정밀검수 체크박스가 체크된 경우 값 추가
     if (document.getElementById('detailed-inspection-include').checked) {
@@ -196,31 +257,44 @@
         finalCost += parseFloat(document.getElementById('customs-duty-cost').value.replace('원', '').replace(/,/g, '')) || 0;
     }
 
+    // 간이통관비용 체크박스가 체크된 경우 값 추가
+    if (document.getElementById('simplified-customs-clearance-include').checked) {
+        finalCost += 3000; // 간이통관비용 고정 값 3000원 추가
+    }
+
     // 최종결과를 표시
     document.getElementById('final-result').value = `${finalCost.toLocaleString('ko-KR')}원`;
 }
 
 function calculateEstimatedCost(cbm, weight, dimensionsSum) {
-    // 초기값을 0으로 설정
+    var shippingToggle = document.getElementById('shipping-toggle');
+    var isAir = shippingToggle.checked; // 체크 상태 확인
+    var basePrice, pricePerKg;
+
+    if (isAir) {
+        // 항공일 경우
+        basePrice = 7300;
+        pricePerKg = 3400;
+    } else {
+        // 해운일 경우
+        basePrice = 6100;
+        pricePerKg = 1600;
+    }
+
     var weightCost = 0;
     var volumeCost = 0;
 
-    // 무게 입력이 유효한 경우에만 계산
     if (!isNaN(weight) && weight > 0) {
-        weightCost = 6100 + (1600 * (weight - 1));
-    } else {
-        weightCost = 0; // 아무것도 입력되지 않았을 경우 무게배송비용을 0으로 설정
+        weightCost = basePrice + (pricePerKg * (weight - 1));
     }
 
-    // CBM 계산이 유효한 경우에만 계산
     if (!isNaN(cbm) && cbm > 0) {
-        cbm = Math.max(cbm, 0.1); // 최소 CBM 값을 0.1로 설정하여 소수점 첫째 자리까지 표현
+        cbm = Math.max(cbm, 0.1); // 최소 CBM 값을 0.1로 설정
         volumeCost = cbm * 86000;
-    } else if (dimensionsSum > 160) { // 부피 계산이 유효하지 않지만, 차원 합이 160을 초과하는 경우
-        volumeCost = 86000; // 최소 부피 비용 설정
+    } else if (dimensionsSum > 160) {
+        volumeCost = 86000;
     }
 
-    // 무게배송비용과 부피배송비용을 각각의 필드에 설정
     document.getElementById('weight-shipping-cost').value = weightCost > 0 ? `${weightCost.toLocaleString('ko-KR')}원` : "0원";
     document.getElementById('volume-shipping-cost').value = volumeCost > 0 ? `${volumeCost.toLocaleString('ko-KR')}원` : "0원";
 }
@@ -344,7 +418,7 @@ function calculateCJExtraCharge(dimensionsSum, weight) {
 
 function calculateCustomsDuty() {
     var originalPrice = parseFloat(document.getElementById('original-price').value) || 0;
-    var customsDuty = originalPrice * 0.18; // 관부가세는 원가의 18%
+    var customsDuty = originalPrice * 0.188; // 관부가세는 원가의 18.8%
 
    document.getElementById('customs-duty-cost').value = `${customsDuty.toLocaleString('ko-KR')}원`;
 }
@@ -357,6 +431,31 @@ function calculateCustomsDuty() {
         checkbox.addEventListener('change', calculateShippingCost); // 모든 체크박스에 이벤트 리스너 추가
     });
    
+   // 배송 방식 토글 버튼 변경 시 계산 로직 재실행
+   var shipmentMethodButtons = document.querySelectorAll('input[name="shipment-method"]');
+   shipmentMethodButtons.forEach(button => {
+    button.addEventListener('change', calculateShippingCost);
+   });
+
+// 토글 스위치 변경 이벤트 핸들러
+document.getElementById('shipping-toggle').addEventListener('change', function() {
+    calculateShippingCost(); // 배송 방식 변경 시 비용 다시 계산
+});
+
+
+    var shippingToggle = document.getElementById('shipping-toggle');
+    var shippingMethodDisplay = document.getElementById('shipping-method-display');
+
+    // 토글 버튼 상태 변경 이벤트 리스너 추가
+    shippingToggle.addEventListener('change', function() {
+        if (this.checked) {
+            shippingMethodDisplay.textContent = '항공'; // 체크 시 '항공'으로 변경
+        } else {
+            shippingMethodDisplay.textContent = '해운'; // 체크 해제 시 '해운'으로 변경
+        }
+    });
+
+
 };
 
     </script>
@@ -365,9 +464,23 @@ function calculateCustomsDuty() {
         <div class="input-wrap-box">
             <!-- 결과 표시 영역 -->
             <div class="input-item-2nd-row">
+
+<!-- 배송 방식 선택 토글 버튼과 텍스트 표시 -->
+<div class="input-item">
+    <label style="margin-bottom: 20px;">배송 방식 선택</label>
+    <div class="toggle-switch">
+        <input type="checkbox" id="shipping-toggle" class="checkbox">
+        <label for="shipping-toggle" class="switch"></label>
+    </div>
+    <div id="shipping-method-display">해운</div> <!-- 초기 상태는 해운으로 설정 -->
+</div>
+
+
+
+
                 <div class="input-item">
                     <div class="checkbox-and-label">
-                        <input type="checkbox" id="cbm-include" >
+                        <input type="checkbox" id="cbm-include" disabled>
                         <label for="cbm-include">CBM</label>
                     </div>
                     <input id="cbm" type="text" placeholder="자동 계산됨" >
@@ -375,7 +488,7 @@ function calculateCustomsDuty() {
 
                 <div class="input-item">
                     <div class="checkbox-and-label">
-                            <input type="checkbox" id="weight-shipping-cost-include" >
+                            <input type="checkbox" id="weight-shipping-cost-include" disabled>
                             <label for="weight-shipping-cost-include">무게배송비용</label>
                         </div>
                         <input id="weight-shipping-cost" type="text" placeholder="자동 계산됨" disabled>
@@ -383,7 +496,7 @@ function calculateCustomsDuty() {
 
                 <div class="input-item">
                     <div class="checkbox-and-label">
-                        <input type="checkbox" id="volume-shipping-cost-include" >
+                        <input type="checkbox" id="volume-shipping-cost-include" disabled>
                         <label for="volume-shipping-cost-include">부피배송비용</label>
                     </div>
                     <input id="volume-shipping-cost" type="text" placeholder="자동 계산됨" disabled>
@@ -445,11 +558,19 @@ function calculateCustomsDuty() {
                     <input id="cj-extra-charge-cost" type="text" placeholder="자동 계산됨" disabled>
                 </div>
 
+                <div class="input-item">
+                    <div class="checkbox-and-label">
+                        <input type="checkbox" id="simplified-customs-clearance-include">
+                        <label for="simplified-customs-clearance-include">간이통관비용</label>
+                    </div>
+                    <input id="simplified-customs-clearance-cost" type="text" value="3000원" disabled>
+                </div>
+
                 <!-- 관부가세 -->
                 <div class="input-item">
                     <div class="checkbox-and-label">
                         <input type="checkbox" id="customs-duty-include" >
-                        <label for="customs-duty-include">관·부가세 (18%로 계산)</label>
+                        <label for="customs-duty-include">관·부가세 (18.8%로 계산)</label>
                     </div>
                     <input id="customs-duty-cost" type="text" placeholder="자동 계산됨" disabled>
                 </div>
