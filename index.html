@@ -158,7 +158,7 @@
 
 </head>
 <body>
-    <h1> 에스엔비 배송비 계산기 v1.2 </h1> <!-- 제목 추가 -->
+    <h1> 에스엔비 배송비 계산기 v1.3 </h1> <!-- 제목 추가 -->
     <h2> 어디까지나 예상견적으로 실제 견적은 달라질 수 있음을 유의해주세요! </h2> <!-- 주의 추가 -->
     <div class="compute-input">
         <div class="input-wrap-box">
@@ -197,7 +197,7 @@
 
             var cbm = (length * width * height) / 1000000;
             var cbm_gyungdong = (length * width * height);
-            document.getElementById('cbm').value = cbm.toFixed(1); // 소수점 첫째 자리까지 반올림하여 표시
+            document.getElementById('cbm').value = cbm.toFixed(2); // 소수점 첫째 자리까지 반올림하여 표시
 
             // 여기에서 다른 함수들을 호출합니다.
             calculateEstimatedCost(cbm, weight, dimensionsSum);
@@ -289,7 +289,8 @@ function calculateEstimatedCost(cbm, weight, dimensionsSum) {
     }
 
     if (!isNaN(cbm) && cbm > 0) {
-        cbm = Math.max(cbm, 0.1); // 최소 CBM 값을 0.1로 설정
+        cbm = Math.max(cbm, 0.1);
+        cbm = Math.ceil(cbm * 10) / 10;  // 0.1 단위로 올림 처리
         volumeCost = cbm * 86000;
     } else if (dimensionsSum > 160) {
         volumeCost = 86000;
@@ -571,7 +572,7 @@ document.getElementById('shipping-toggle').addEventListener('change', function()
                 <div class="input-item">
                     <div class="checkbox-and-label">
                         <input type="checkbox" id="customs-duty-include" >
-                        <label for="customs-duty-include">관·부가세 (18.8%로 계산)</label>
+                        <label for="customs-duty-include">관·부가세 (18.8%)</label>
                     </div>
                     <input id="customs-duty-cost" type="text" placeholder="자동 계산됨" disabled>
                 </div>
